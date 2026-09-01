@@ -24,62 +24,48 @@ Or use a local copy:
 const name = "myNewAi";
 const explorationRate = 0.1; // chance of random action during learning
 const discountFactor = 0.9;  // importance of future rewards
+const learningType = "max";  // "max" or "min"
 
-const myNewAi = new qTable(name, explorationRate, discountFactor);
+const myNewAi = new qTable(name, explorationRate, discountFactor, learningType);
 ```
 
 `name` is used as the key in `localStorage`, so the table persists between reloads.
-
-### Mark terminal states
-
-Use `saveTerminal(state, reward)` for end states:
-
-```js
-myNewAi.saveTerminal("win", 1);
-myNewAi.saveTerminal("lose", -1);
-myNewAi.saveTerminal("draw", 0);
-```
+`learningType` controls whether the agent prefers higher (`"max"`) or lower (`"min"`) values.
 
 ### Save transitions and learned values
 
-Use `save(state, action, possibleNextStates, additionalReward = 0, mode = "max")`:
+Use `save(state, action, reward = 0)`:
 
 ```js
-myNewAi.save(
-  "player-turn:X..O.....",
-  "place-4",
-  ["opponent-turn:X..OO....", "opponent-turn:X..O.O..."],
-  0,
-  "max"
-);
+myNewAi.save("player-turn:X..O.....", "place-4", 1);
+myNewAi.save("opponent-turn:X..OO....", "place-7", -1);
 ```
 
 - `state`: current state key
 - `action`: action taken from that state
-- `possibleNextStates`: next states reachable after the action
-- `additionalReward`: immediate reward added to estimated future reward
-- `mode`:
-  - `"max"` for agents trying to maximize reward
-  - `"min"` for agents trying to minimize score (for adversarial behavior)
+- `reward`: immediate reward to apply to this state/action
+
+Each `save()` call also links the previous state/action to the current state and updates the previous value using the configured `discountFactor` and `learningType`.
 
 ### Choose an action
 
-Use `get(state, possibleActions, canExplore = true)`:
+Use `get(state, possibleActions, canExplore = false, forceLearning = false)`:
 
 ```js
 const action = myNewAi.get(
   "player-turn:X..O.....",
   ["place-1", "place-2", "place-4", "place-7"],
-  true
+  true,
+  false
 );
 ```
 
 - If exploration is enabled, the agent may return a random action based on `explorationRate`.
-- If a state has no learned values yet, it picks a random action.
-- If multiple actions share the best score, one is picked randomly.
+- In normal mode, it returns the best-known action for the configured learning type.
+- In `forceLearning` mode, it prefers actions that have not been explored yet.
 
 ## Notes
 
 - Data is stored in `localStorage`.
-- Calling `get()` on a terminal state throws an error.
+- If no action has a learned value yet and exploration is disabled, `get()` may return `null`.
 - This library expects your app to define how states/actions are represented as strings.
