@@ -1,5 +1,5 @@
 class qTable {
-    constructor(name = 'qTable', explorationRate = 0.1, discountFactor = 0.9, learningType = "max") {
+    constructor(name = this.constructor.name, explorationRate = 0.1, discountFactor = 0.9, learningType = "max") {
         //initialize learning parameters
         this.table = {};
         this.explorationRate = explorationRate;
